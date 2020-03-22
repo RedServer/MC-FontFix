@@ -1,0 +1,9 @@
+/.idea
+/.gradle
+/build
+
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+.LSOverride

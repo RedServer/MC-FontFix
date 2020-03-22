@@ -1,0 +1,57 @@
+buildscript {
+	repositories {
+		mavenCentral()
+		maven {
+			name = 'forge'
+			url = 'https://files.minecraftforge.net/maven'
+		}
+		maven {
+			name = 'sonatype'
+			url = 'https://oss.sonatype.org/content/repositories/snapshots/'
+		}
+	}
+	dependencies {
+		classpath 'net.minecraftforge.gradle:ForgeGradle:1.2-SNAPSHOT'
+	}
+}
+
+repositories {
+	jcenter()
+	flatDir {
+		dirs 'lib'
+	}
+	flatDir {
+		dirs System.getenv('GRADLE_FLATDIR_PATH'), System.getenv('MC_LIBRARY_PATH')
+	}
+}
+
+apply plugin: 'forge'
+
+minecraft {
+	version = '1.7.10-10.13.4.1614-1.7.10'
+	runDir = 'eclipse'
+}
+
+// Project settings
+archivesBaseName = 'FontFix'
+group = 'com.gamerforea'
+version = '1.7.10'
+
+compileJava {
+	sourceCompatibility = JavaVersion.VERSION_1_8
+	targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+}
+
+jar {
+	manifest {
+//		attributes 'FMLCorePluginContainsFMLMod': 'true'
+		attributes 'FMLCorePlugin': 'com.gamerforea.fontfix.LoadingPlugin'
+	}
+}
+
+dependencies {
+}
