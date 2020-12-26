@@ -4,6 +4,7 @@ import java.util.ListIterator;
 import net.minecraft.launchwrapper.IClassTransformer;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 import static org.objectweb.asm.Opcodes.*;
 
@@ -14,8 +15,15 @@ public class ASMTransformer implements IClassTransformer {
 
 	@Override
 	public byte[] transform(String name, String transformedName, byte[] bytes) {
-		if(name.equals("bbu")) return patchFontRenderer(bytes);
-		if(name.equals("brs")) return patchLocale(bytes);
+		switch(name) {
+			case "bbu":
+			case "net.minecraft.client.gui.FontRenderer":
+				return patchFontRenderer(bytes);
+			case "brs":
+				return patchLocale(bytes, true);
+			case "net.minecraft.client.resources.Locale":
+				return patchLocale(bytes, false);
+		}
 		return bytes;
 	}
 
@@ -46,28 +54,35 @@ public class ASMTransformer implements IClassTransformer {
 		return writer.toByteArray();
 	}
 
-	private byte[] patchLocale(byte[] bytes) {
+	private byte[] patchLocale(byte[] bytes, boolean obf) {
 		ClassNode clazz = new ClassNode();
 		new ClassReader(bytes).accept(clazz, 0);
 
+		String findMethod = obf ? "a" : "isUnicode";
+		String classMc = obf ? "bao" : "net/minecraft/client/Minecraft";
+		String classSettings = obf ? "bbj" : "net/minecraft/client/settings/GameSettings";
+		String classLocale = obf ? "brs" : "net/minecraft/client/resources/Locale";
+		String getMinecraft = obf ? "B" : "getMinecraft";
+		String gameSettings = obf ? "u" : "gameSettings";
+
 		for(MethodNode method : clazz.methods) {
-			if(method.name.equals("a") && method.desc.equals("()Z")) {
+			if(method.name.equals(findMethod) && method.desc.equals(Type.getMethodDescriptor(Type.BOOLEAN_TYPE))) {
 				InsnList list = new InsnList();
 
-				list.add(new MethodInsnNode(INVOKESTATIC, "bao", "B", "()Lbao;", false));
+				list.add(new MethodInsnNode(INVOKESTATIC, classMc, getMinecraft, Type.getMethodDescriptor(getClassType(classMc)), false));
 				list.add(new VarInsnNode(ASTORE, 1));
 				list.add(new VarInsnNode(ALOAD, 1));
-				list.add(new FieldInsnNode(GETFIELD, "bao", "u", "Lbbj;"));
-				list.add(new FieldInsnNode(GETFIELD, "bbj", "aK", "Ljava/lang/String;"));
+				list.add(new FieldInsnNode(GETFIELD, classMc, gameSettings, "L" + classSettings + ";"));
+				list.add(new FieldInsnNode(GETFIELD, classSettings, (obf ? "aK" : "language"), Type.getType(String.class).getDescriptor()));
 				list.add(new LdcInsnNode("ru_RU"));
-				list.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false));
-				list.add(new MethodInsnNode(INVOKESTATIC, "bao", "B", "()Lbao;", false));
-				list.add(new FieldInsnNode(GETFIELD, "bao", "u", "Lbbj;"));
-				list.add(new FieldInsnNode(GETFIELD, "bbj", "aL", "Z"));
+				list.add(new MethodInsnNode(INVOKEVIRTUAL, Type.getInternalName(String.class), "equals", Type.getMethodDescriptor(Type.BOOLEAN_TYPE, Type.getType(Object.class)), false));
+				list.add(new MethodInsnNode(INVOKESTATIC, classMc, getMinecraft, Type.getMethodDescriptor(getClassType(classMc)), false));
+				list.add(new FieldInsnNode(GETFIELD, classMc, gameSettings, "L" + classSettings + ";"));
+				list.add(new FieldInsnNode(GETFIELD, classSettings, (obf ? "aL" : "forceUnicodeFont"), Type.BOOLEAN_TYPE.getDescriptor()));
 				list.add(new InsnNode(IRETURN));
-				list.add(new FrameNode(F_APPEND, 1, new Object[]{"bao"}, 0, null));
+				list.add(new FrameNode(F_APPEND, 1, new Object[]{classMc}, 0, null));
 				list.add(new VarInsnNode(ALOAD, 0));
-				list.add(new FieldInsnNode(GETFIELD, "brs", "d", "Z"));
+				list.add(new FieldInsnNode(GETFIELD, classLocale, (obf ? "d" : "field_135029_d"), Type.BOOLEAN_TYPE.getDescriptor()));
 				list.add(new InsnNode(IRETURN));
 
 				method.instructions = list;
@@ -78,5 +93,9 @@ public class ASMTransformer implements IClassTransformer {
 		ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 		clazz.accept(writer);
 		return writer.toByteArray();
+	}
+
+	private static Type getClassType(String name) {
+		return Type.getType("L" + name + ";");
 	}
 }

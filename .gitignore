@@ -1,7 +1,12 @@
-/.idea
+# Gradle
 /.gradle
 /build
 
+# IDEA
+/.idea
+/out
+
+# OS
 Thumbs.db
 ehthumbs.db
 Desktop.ini
