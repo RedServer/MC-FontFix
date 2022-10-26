@@ -1,0 +1,99 @@
+buildscript {
+	repositories {
+		mavenCentral()
+		maven {
+			name = 'jitpack'
+			url = 'https://jitpack.io'
+		}
+	}
+
+	dependencies {
+		classpath 'com.github.TheAndrey:BON:2.2'
+	}
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+
+repositories {
+	mavenLocal()
+	if (repositories.hasProperty('redserver')) {
+		redserver()
+	}
+	mavenCentral()
+}
+
+idea {
+	module {
+		inheritOutputDirs = true
+		excludeDirs += file('./minecraft')
+	}
+}
+
+// Project settings
+archivesBaseName = 'FontFix'
+sourceCompatibility = targetCompatibility = JavaVersion.VERSION_1_8
+
+dependencies {
+	compile group: 'net.minecraftforge', name: 'forgeSrc', version: '1.4.7-6.6.2.534'
+	compile group: 'net.minecraft', name: 'launchwrapper', version: '1.5'
+}
+
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+}
+
+jar {
+	manifest {
+		attributes 'FMLCorePlugin': 'me.theandrey.fontfix.LoadingPlugin'
+	}
+}
+
+task devJar(type: Jar) {
+	classifier = 'dev'
+	manifest = jar.manifest
+	from sourceSets.main.output
+}
+
+artifacts {
+	archives devJar
+}
+
+/* Reobf task */
+task reobf(type: BON, dependsOn: jar) {
+	mcpFolder = getProperty('minecraft.mcp.dir') + '/1.4.7-forge'
+	input = jar.archivePath
+	output = jar.archivePath
+}
+
+// Task dependency
+tasks.jar.finalizedBy tasks.reobf
+
+class BON extends JavaExec {
+	String mcpFolder
+	String input
+	String output
+	String from = 'MCP'
+	String to = 'OBF'
+
+	@TaskAction
+	@Override
+	void exec() {
+		this.setClasspath(project.buildscript.configurations.classpath)
+		this.setMain('immibis.bon.cui.MCPRemap')
+		this.setArgs(buildArguments())
+		super.exec()
+	}
+
+	private List<String> buildArguments() {
+		def args = ['-q', '-m', '-mcp', this.mcpFolder, '-from', this.from, '-to', this.to,
+		            '-side', 'UNIVERSAL', '-in', this.input, '-out', this.output]
+
+		for (dep in project.configurations.getByName('compileClasspath').resolve()) {
+			if (dep.getName().contains('-dev') || dep.getName().contains('forgeSrc')) {
+				args.addAll('-ref', dep.toString())
+			}
+		}
+		return args
+	}
+}

@@ -1,0 +1,15 @@
+# Gradle
+/.gradle
+/build
+/minecraft
+
+# IDEA
+/.idea
+/out
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+.LSOverride
