@@ -29,4 +29,12 @@ public class LoadingPlugin implements IFMLLoadingPlugin {
 	public String[] getLibraryRequestClass() {
 		return new String[0];
 	}
+
+	/**
+	 * Проверяет окружение запуска игры (dev клиент)
+	 */
+	public static boolean isGameObfuscated() {
+		// Безопасный метод проверки, чтобы не дёргать классы
+		return LoadingPlugin.class.getResource("/net/minecraft/world/World.class") == null;
+	}
 }
