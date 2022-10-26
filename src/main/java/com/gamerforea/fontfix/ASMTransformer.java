@@ -2,7 +2,6 @@ package com.gamerforea.fontfix;
 
 import java.util.ListIterator;
 import net.minecraft.launchwrapper.IClassTransformer;
-import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
@@ -15,7 +14,7 @@ public class ASMTransformer implements IClassTransformer {
 
 	@Override
 	public byte[] transform(String name, String transformedName, byte[] bytes) {
-		switch(name) {
+		switch (name) {
 			case "bbu":
 			case "net.minecraft.client.gui.FontRenderer":
 				return patchFontRenderer(bytes);
@@ -28,35 +27,29 @@ public class ASMTransformer implements IClassTransformer {
 	}
 
 	private byte[] patchFontRenderer(byte[] bytes) {
-		ClassNode clazz = new ClassNode();
-		new ClassReader(bytes).accept(clazz, 0);
+		ClassNode clazz = Utils.readClass(bytes);
 
-		for(MethodNode method : clazz.methods) {
+		for (MethodNode method : clazz.methods) {
 			ListIterator<AbstractInsnNode> iter = method.instructions.iterator();
 
-			while(iter.hasNext()) {
+			while (iter.hasNext()) {
 				AbstractInsnNode insn = iter.next();
 
-				if(!(insn instanceof LdcInsnNode)) {
-					continue;
-				}
+				if (insn.getType() == AbstractInsnNode.LDC_INSN) {
+					LdcInsnNode ldc = (LdcInsnNode)insn;
 
-				LdcInsnNode ldc = (LdcInsnNode)insn;
-
-				if(ldc.cst.equals(ASCII_TABLE)) {
-					ldc.cst = ASCII_TABLE_RUS;
+					if (ldc.cst.equals(ASCII_TABLE)) {
+						ldc.cst = ASCII_TABLE_RUS;
+					}
 				}
 			}
 		}
 
-		ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-		clazz.accept(writer);
-		return writer.toByteArray();
+		return Utils.writeClass(clazz, 0);
 	}
 
 	private byte[] patchLocale(byte[] bytes, boolean obf) {
-		ClassNode clazz = new ClassNode();
-		new ClassReader(bytes).accept(clazz, 0);
+		ClassNode clazz = Utils.readClass(bytes);
 
 		String findMethod = obf ? "a" : "isUnicode";
 		String classMc = obf ? "bao" : "net/minecraft/client/Minecraft";
@@ -65,18 +58,18 @@ public class ASMTransformer implements IClassTransformer {
 		String getMinecraft = obf ? "B" : "getMinecraft";
 		String gameSettings = obf ? "u" : "gameSettings";
 
-		for(MethodNode method : clazz.methods) {
-			if(method.name.equals(findMethod) && method.desc.equals(Type.getMethodDescriptor(Type.BOOLEAN_TYPE))) {
+		for (MethodNode method : clazz.methods) {
+			if (method.name.equals(findMethod) && method.desc.equals(Type.getMethodDescriptor(Type.BOOLEAN_TYPE))) {
 				InsnList list = new InsnList();
 
-				list.add(new MethodInsnNode(INVOKESTATIC, classMc, getMinecraft, Type.getMethodDescriptor(getClassType(classMc)), false));
+				list.add(new MethodInsnNode(INVOKESTATIC, classMc, getMinecraft, Type.getMethodDescriptor(Utils.getObjectType(classMc)), false));
 				list.add(new VarInsnNode(ASTORE, 1));
 				list.add(new VarInsnNode(ALOAD, 1));
 				list.add(new FieldInsnNode(GETFIELD, classMc, gameSettings, "L" + classSettings + ";"));
 				list.add(new FieldInsnNode(GETFIELD, classSettings, (obf ? "aK" : "language"), Type.getType(String.class).getDescriptor()));
 				list.add(new LdcInsnNode("ru_RU"));
 				list.add(new MethodInsnNode(INVOKEVIRTUAL, Type.getInternalName(String.class), "equals", Type.getMethodDescriptor(Type.BOOLEAN_TYPE, Type.getType(Object.class)), false));
-				list.add(new MethodInsnNode(INVOKESTATIC, classMc, getMinecraft, Type.getMethodDescriptor(getClassType(classMc)), false));
+				list.add(new MethodInsnNode(INVOKESTATIC, classMc, getMinecraft, Type.getMethodDescriptor(Utils.getObjectType(classMc)), false));
 				list.add(new FieldInsnNode(GETFIELD, classMc, gameSettings, "L" + classSettings + ";"));
 				list.add(new FieldInsnNode(GETFIELD, classSettings, (obf ? "aL" : "forceUnicodeFont"), Type.BOOLEAN_TYPE.getDescriptor()));
 				list.add(new InsnNode(IRETURN));
@@ -90,12 +83,6 @@ public class ASMTransformer implements IClassTransformer {
 			}
 		}
 
-		ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-		clazz.accept(writer);
-		return writer.toByteArray();
-	}
-
-	private static Type getClassType(String name) {
-		return Type.getType("L" + name + ";");
+		return Utils.writeClass(clazz, ClassWriter.COMPUTE_FRAMES);
 	}
 }
