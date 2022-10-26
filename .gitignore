@@ -1,6 +1,7 @@
 # Gradle
 /.gradle
 /build
+/minecraft
 
 # IDEA
 /.idea
