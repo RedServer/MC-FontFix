@@ -1,6 +1,7 @@
 package com.gamerforea.fontfix;
 
 import java.util.ListIterator;
+import com.google.common.collect.ImmutableSet;
 import net.minecraft.launchwrapper.IClassTransformer;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
@@ -28,6 +29,11 @@ public class ASMTransformer implements IClassTransformer {
 				return patchMinecraft(bytes, false);
 			case "bao":
 				return patchMinecraft(bytes, true);
+			case "cofh.core.ProxyClient":
+			case "cofh.lib.render.RenderHelper":
+			case "buildcraft.silicon.render.PackageFontRenderer":
+			case "blusunrize.immersiveengineering.client.IEManualInstance":
+				return patchMods(bytes);
 		}
 		return bytes;
 	}
@@ -46,6 +52,7 @@ public class ASMTransformer implements IClassTransformer {
 
 					if (ldc.cst.equals(ASCII_TABLE)) {
 						ldc.cst = ASCII_TABLE_RU;
+						LoadingPlugin.LOGGER.debug("Replaced ASCII table in '{} {}'", clazz.name, method.name + method.desc);
 					}
 				}
 			}
@@ -85,6 +92,7 @@ public class ASMTransformer implements IClassTransformer {
 				list.add(new InsnNode(IRETURN));
 
 				method.instructions = list;
+				LoadingPlugin.LOGGER.debug("Fixed unicode detection for 'ru_RU' locale.");
 				break;
 			}
 		}
@@ -92,9 +100,6 @@ public class ASMTransformer implements IClassTransformer {
 		return Utils.writeClass(clazz, ClassWriter.COMPUTE_FRAMES);
 	}
 
-	/**
-	 * @noinspection ConstantConditions
-	 */
 	private byte[] patchMinecraft(byte[] bytes, boolean obf) {
 		ClassNode clazz = Utils.readClass(bytes);
 		final Type fondRenderer = Utils.getObjectType(obf ? "bbu" : "net.minecraft.client.gui.FontRenderer");
@@ -138,4 +143,51 @@ public class ASMTransformer implements IClassTransformer {
 		return Utils.writeClass(clazz, 0);
 	}
 
+	/**
+	 * Учим моды использовать новую текстуру шрифта
+	 */
+	private byte[] patchMods(byte[] bytes) {
+		ClassNode clazz = Utils.readClass(bytes);
+		ImmutableSet<String> methodNames = ImmutableSet.of("<cinit>", "<init>", "registerRenderInformation");
+
+		for (MethodNode method : clazz.methods) {
+			if (methodNames.contains(method.name)) {
+				replaceFontTexture(clazz, method);
+			}
+		}
+
+		return Utils.writeClass(clazz, 0);
+	}
+
+	private static boolean replaceFontTexture(ClassNode clazz, MethodNode method) {
+		final Type resourceLoc = Utils.getObjectType("net.minecraft.util.ResourceLocation"); // SRG Only
+		ListIterator<AbstractInsnNode> it = method.instructions.iterator();
+		boolean inConstructor = false;
+
+		while (it.hasNext()) {
+			AbstractInsnNode node = it.next();
+
+			if (node.getOpcode() == NEW && !inConstructor) {
+				TypeInsnNode type = (TypeInsnNode)node;
+				if (type.desc.equals(resourceLoc.getInternalName())) {
+					inConstructor = true;
+				}
+			}
+
+			if (inConstructor && node.getType() == AbstractInsnNode.LDC_INSN) {
+				LdcInsnNode ldc = (LdcInsnNode)node;
+				if (ldc.cst.equals(ASCII_TEXTURE)) {
+					ldc.cst = ASCII_TEXTURE_RU;
+					LoadingPlugin.LOGGER.debug("Replaced default font texture in '{} {}'", clazz.name, method.name + method.desc);
+					return true;
+				}
+			}
+
+			if (node.getOpcode() == INVOKESPECIAL && inConstructor) {
+				inConstructor = false;
+			}
+		}
+
+		return false;
+	}
 }
