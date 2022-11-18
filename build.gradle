@@ -5,9 +5,13 @@ buildscript {
 			name = 'forge'
 			url = getProperty('minecraftforge.repository.url')
 		}
+		maven {
+			name = 'jitpack'
+			url = 'https://jitpack.io'
+		}
 	}
 	dependencies {
-		classpath 'net.minecraftforge.gradle:ForgeGradle:1.2-SNAPSHOT'
+		classpath 'com.github.RedServer:ForgeGradle:1.2.11'
 	}
 }
 
