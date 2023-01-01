@@ -32,7 +32,7 @@ idea {
 
 // Project settings
 archivesBaseName = 'FontFix'
-sourceCompatibility = targetCompatibility = JavaVersion.VERSION_1_8
+sourceCompatibility = targetCompatibility = JavaVersion.VERSION_1_6
 
 dependencies {
 	compile group: 'net.minecraftforge', name: 'forgeSrc', version: '1.4.7-6.6.2.534'

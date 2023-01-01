@@ -24,16 +24,14 @@ public class ASMTransformer implements IClassTransformer {
 
 	@Override
 	public byte[] transform(String name, byte[] bytes) {
-		switch (name) {
-			case "bn":
-				return patchStringTranslate(bytes, true);
-			case "net.minecraft.util.StringTranslate":
-				return patchStringTranslate(bytes, false);
-			case "net.minecraft.client.Minecraft":
-				return patchMinecraft(bytes, LoadingPlugin.isGameObfuscated());
-			case "u":
-			case "net.minecraft.util.ChatAllowedCharacters":
-				return patchAllowedCharacters(bytes);
+		if (name.equals("bn")) {
+			return patchStringTranslate(bytes, true);
+		} else if (name.equals("net.minecraft.util.StringTranslate")) {
+			return patchStringTranslate(bytes, false);
+		} else if (name.equals("net.minecraft.client.Minecraft")) {
+			return patchMinecraft(bytes, LoadingPlugin.isGameObfuscated());
+		} else if (name.equals("u") || name.equals("net.minecraft.util.ChatAllowedCharacters")) {
+			return patchAllowedCharacters(bytes);
 		}
 		return bytes;
 	}
@@ -41,6 +39,7 @@ public class ASMTransformer implements IClassTransformer {
 	/**
 	 * Делает русскую локаль не-unicode
 	 */
+	@SuppressWarnings("deprecation")
 	private byte[] patchStringTranslate(byte[] bytes, boolean obf) {
 		ClassNode clazz = Utils.readClass(bytes);
 
@@ -66,7 +65,7 @@ public class ASMTransformer implements IClassTransformer {
 							InsnList list = new InsnList();
 							list.add(new LdcInsnNode("ru_RU"));
 							list.add(new VarInsnNode(ALOAD, 1)); // #1 param
-							list.add(new MethodInsnNode(INVOKEVIRTUAL, Type.getInternalName(String.class), "equals", Type.getMethodDescriptor(Type.BOOLEAN_TYPE, Type.getType(Object.class)), false));
+							list.add(new MethodInsnNode(INVOKEVIRTUAL, Type.getInternalName(String.class), "equals", Type.getMethodDescriptor(Type.BOOLEAN_TYPE, Type.getType(Object.class))));
 							list.add(new JumpInsnNode(IFEQ, label));
 							list.add(new VarInsnNode(ALOAD, 0)); // this
 							list.add(new InsnNode(ICONST_0));
