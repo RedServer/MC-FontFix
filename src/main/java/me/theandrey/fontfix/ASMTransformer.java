@@ -23,14 +23,14 @@ public class ASMTransformer implements IClassTransformer {
 	private static final String CYRILLIC_TEXTURE = "/font/default_ru.png";
 
 	@Override
-	public byte[] transform(String name, byte[] bytes) {
-		if (name.equals("bn")) {
+	public byte[] transform(String name, String transformedName, byte[] bytes) {
+		if (name.equals("bp")) {
 			return patchStringTranslate(bytes, true);
 		} else if (name.equals("net.minecraft.util.StringTranslate")) {
 			return patchStringTranslate(bytes, false);
 		} else if (name.equals("net.minecraft.client.Minecraft")) {
 			return patchMinecraft(bytes, LoadingPlugin.isGameObfuscated());
-		} else if (name.equals("u") || name.equals("net.minecraft.util.ChatAllowedCharacters")) {
+		} else if (name.equals("v") || name.equals("net.minecraft.util.ChatAllowedCharacters")) {
 			return patchAllowedCharacters(bytes);
 		}
 		return bytes;
@@ -44,11 +44,11 @@ public class ASMTransformer implements IClassTransformer {
 		ClassNode clazz = Utils.readClass(bytes);
 
 		final String findMethod = obf ? "a" : "setLanguage";
-		final String isUnicode = obf ? "e" : "isUnicode";
-		final String currentLanguage = obf ? "d" : "currentLanguage";
+		final String isUnicode = obf ? "f" : "isUnicode";
+		final String currentLanguage = obf ? "e" : "currentLanguage";
 
 		for (MethodNode method : clazz.methods) {
-			if (method.name.equals(findMethod) && method.desc.equals(Type.getMethodDescriptor(Type.VOID_TYPE, Type.getType(String.class)))) {
+			if (method.name.equals(findMethod) && method.desc.equals(Type.getMethodDescriptor(Type.VOID_TYPE, Type.getType(String.class), Type.BOOLEAN_TYPE))) {
 
 				ListIterator<AbstractInsnNode> iter = method.instructions.iterator();
 
@@ -91,7 +91,7 @@ public class ASMTransformer implements IClassTransformer {
 	 */
 	private byte[] patchMinecraft(byte[] bytes, boolean obf) {
 		ClassNode clazz = Utils.readClass(bytes);
-		final Type fondRenderer = Utils.getObjectType(obf ? "atq" : "net.minecraft.client.gui.FontRenderer");
+		final Type fondRenderer = Utils.getObjectType(obf ? "awv" : "net.minecraft.client.gui.FontRenderer");
 		final String startGame = obf ? "a" : "startGame";
 
 		for (MethodNode method : clazz.methods) {

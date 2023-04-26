@@ -16,7 +16,9 @@ apply plugin: 'java'
 apply plugin: 'idea'
 
 repositories {
-	mavenLocal()
+	flatDir {
+		dirs 'lib'
+	}
 	if (repositories.hasProperty('redserver')) {
 		redserver()
 	}
@@ -35,7 +37,7 @@ archivesBaseName = 'FontFix'
 sourceCompatibility = targetCompatibility = JavaVersion.VERSION_1_6
 
 dependencies {
-	compile group: 'net.minecraftforge', name: 'forgeSrc', version: '1.4.7-6.6.2.534'
+	compile group: 'net.minecraftforge', name: 'forgeSrc', version: '1.5.2-7.8.1.738'
 	compile group: 'net.minecraft', name: 'launchwrapper', version: '1.5'
 }
 
@@ -61,7 +63,7 @@ artifacts {
 
 /* Reobf task */
 task reobf(type: BON, dependsOn: jar) {
-	mcpFolder = getProperty('minecraft.mcp.dir') + '/1.4.7-forge'
+	mcpFolder = getProperty('minecraft.mcp.dir') + '/1.5.2-forge'
 	input = jar.archivePath
 	output = jar.archivePath
 }
