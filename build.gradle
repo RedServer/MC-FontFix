@@ -20,6 +20,9 @@ repositories {
 	if (repositories.hasProperty('redserver')) {
 		redserver()
 	}
+	maven {
+		url 'https://libraries.minecraft.net/'
+	}
 	mavenCentral()
 }
 
@@ -35,8 +38,8 @@ archivesBaseName = 'FontFix'
 sourceCompatibility = targetCompatibility = JavaVersion.VERSION_1_6
 
 dependencies {
-	compile group: 'net.minecraftforge', name: 'forgeSrc', version: '1.4.7-6.6.2.534'
-	compile group: 'net.minecraft', name: 'launchwrapper', version: '1.5'
+	compile group: 'net.minecraftforge', name: 'forgeSrc', version: '1.6.4-9.11.1.1345'
+	compile group: 'net.minecraft', name: 'launchwrapper', version: '1.8'
 }
 
 tasks.withType(JavaCompile) {
@@ -61,7 +64,7 @@ artifacts {
 
 /* Reobf task */
 task reobf(type: BON, dependsOn: jar) {
-	mcpFolder = getProperty('minecraft.mcp.dir') + '/1.4.7-forge'
+	mcpFolder = getProperty('minecraft.mcp.dir') + '/1.6.4-forge'
 	input = jar.archivePath
 	output = jar.archivePath
 }

@@ -3,6 +3,7 @@ package me.theandrey.fontfix;
 import java.util.Map;
 import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
 
+@IFMLLoadingPlugin.SortingIndex(900)
 public class LoadingPlugin implements IFMLLoadingPlugin {
 
 	@Override
