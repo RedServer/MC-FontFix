@@ -7,11 +7,11 @@ buildscript {
 		}
 	}
 	dependencies {
-		classpath 'net.minecraftforge.gradle:ForgeGradle:1.2-SNAPSHOT'
+		classpath 'net.minecraftforge.gradle:ForgeGradle:3.+'
 	}
 }
 
-apply plugin: 'forge'
+apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'idea'
 
 idea {
@@ -22,26 +22,55 @@ idea {
 }
 
 minecraft {
-	version = '1.7.10-10.13.4.1614-1.7.10'
-	runDir = 'minecraft'
+	// The mappings can be changed at any time, and must be in the following format.
+	// snapshot_YYYYMMDD   Snapshot are built nightly.
+	// stable_#            Stables are built at the discretion of the MCP team.
+	mappings channel: 'snapshot', version: '20171003-1.12'
+	// makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
+
+	// accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+
+	// Default run configurations.
+	// These can be tweaked, removed, or duplicated as needed.
+	runs {
+		client {
+			workingDirectory project.file('minecraft')
+
+			// Recommended logging data for a userdev environment
+			property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+
+			// Recommended logging level for the console
+			property 'forge.logging.console.level', 'debug'
+		}
+	}
+}
+
+dependencies {
+	// Specify the version of Minecraft to use, If this is any group other then 'net.minecraft' it is assumed
+	// that the dep is a ForgeGradle 'patcher' dependency. And it's patches will be applied.
+	// The userdev artifact is a special name and will get all sorts of transformations applied to it.
+	minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2860'
 }
 
 // Project settings
-archivesBaseName = 'FontFix'
 sourceCompatibility = targetCompatibility = JavaVersion.VERSION_1_8
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
 	options.encoding = 'UTF-8'
 }
 
 jar {
 	manifest {
 		attributes 'FMLCorePlugin': 'com.gamerforea.fontfix.LoadingPlugin'
+		attributes 'FMLCorePluginContainsFMLMod': 'true'
 	}
 }
 
-task devJar(type: Jar) {
-	classifier = 'dev'
+// This is the preferred method to reobfuscate your jar file
+jar.finalizedBy('reobfJar')
+
+tasks.register('devJar', Jar) {
+	archiveClassifier.set('dev')
 	manifest = jar.manifest
 	from sourceSets.main.output
 }

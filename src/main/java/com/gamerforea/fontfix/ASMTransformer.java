@@ -18,22 +18,17 @@ public class ASMTransformer implements IClassTransformer {
 	@Override
 	public byte[] transform(String name, String transformedName, byte[] bytes) {
 		switch (name) {
-			case "bbu":
+			case "bip":
 			case "net.minecraft.client.gui.FontRenderer":
 				return patchFontRenderer(bytes);
-			case "brs":
+			case "cfb":
 				return patchLocale(bytes, true);
 			case "net.minecraft.client.resources.Locale":
 				return patchLocale(bytes, false);
 			case "net.minecraft.client.Minecraft":
 				return patchMinecraft(bytes, false);
-			case "bao":
+			case "bib":
 				return patchMinecraft(bytes, true);
-			case "cofh.core.ProxyClient":
-			case "cofh.lib.render.RenderHelper":
-			case "buildcraft.silicon.render.PackageFontRenderer":
-			case "blusunrize.immersiveengineering.client.IEManualInstance":
-				return patchMods(bytes);
 		}
 		return bytes;
 	}
@@ -64,12 +59,12 @@ public class ASMTransformer implements IClassTransformer {
 	private byte[] patchLocale(byte[] bytes, boolean obf) {
 		ClassNode clazz = Utils.readClass(bytes);
 
-		final Type classMc = Utils.getObjectType(obf ? "bao" : "net.minecraft.client.Minecraft");
-		final Type classSettings = Utils.getObjectType(obf ? "bbj" : "net.minecraft.client.settings.GameSettings");
-		final Type classLocale = Utils.getObjectType(obf ? "brs" : "net.minecraft.client.resources.Locale");
+		final Type classMc = Utils.getObjectType(obf ? "bib" : "net.minecraft.client.Minecraft");
+		final Type classSettings = Utils.getObjectType(obf ? "bid" : "net.minecraft.client.settings.GameSettings");
+		final Type classLocale = Utils.getObjectType(obf ? "cfb" : "net.minecraft.client.resources.Locale");
 		final String findMethod = obf ? "a" : "isUnicode";
-		final String getMinecraft = obf ? "B" : "getMinecraft";
-		final String gameSettings = obf ? "u" : "gameSettings";
+		final String getMinecraft = obf ? "z" : "getMinecraft";
+		final String gameSettings = obf ? "t" : "gameSettings";
 
 		for (MethodNode method : clazz.methods) {
 			if (method.name.equals(findMethod) && method.desc.equals(Type.getMethodDescriptor(Type.BOOLEAN_TYPE))) {
@@ -79,16 +74,16 @@ public class ASMTransformer implements IClassTransformer {
 				list.add(new VarInsnNode(ASTORE, 1));
 				list.add(new VarInsnNode(ALOAD, 1));
 				list.add(new FieldInsnNode(GETFIELD, classMc.getInternalName(), gameSettings, classSettings.getDescriptor()));
-				list.add(new FieldInsnNode(GETFIELD, classSettings.getInternalName(), obf ? "aK" : "language", Type.getType(String.class).getDescriptor()));
+				list.add(new FieldInsnNode(GETFIELD, classSettings.getInternalName(), obf ? "aJ" : "language", Type.getType(String.class).getDescriptor()));
 				list.add(new LdcInsnNode("ru_RU"));
 				list.add(new MethodInsnNode(INVOKEVIRTUAL, Type.getInternalName(String.class), "equals", Type.getMethodDescriptor(Type.BOOLEAN_TYPE, Type.getType(Object.class)), false));
 				list.add(new MethodInsnNode(INVOKESTATIC, classMc.getInternalName(), getMinecraft, Type.getMethodDescriptor(classMc), false));
 				list.add(new FieldInsnNode(GETFIELD, classMc.getInternalName(), gameSettings, classSettings.getDescriptor()));
-				list.add(new FieldInsnNode(GETFIELD, classSettings.getInternalName(), obf ? "aL" : "forceUnicodeFont", Type.BOOLEAN_TYPE.getDescriptor()));
+				list.add(new FieldInsnNode(GETFIELD, classSettings.getInternalName(), obf ? "aK" : "forceUnicodeFont", Type.BOOLEAN_TYPE.getDescriptor()));
 				list.add(new InsnNode(IRETURN));
 				list.add(new FrameNode(F_APPEND, 1, new Object[]{classMc.getInternalName()}, 0, null));
 				list.add(new VarInsnNode(ALOAD, 0));
-				list.add(new FieldInsnNode(GETFIELD, classLocale.getInternalName(), obf ? "d" : "field_135029_d", Type.BOOLEAN_TYPE.getDescriptor()));
+				list.add(new FieldInsnNode(GETFIELD, classLocale.getInternalName(), obf ? "d" : "unicode", Type.BOOLEAN_TYPE.getDescriptor()));
 				list.add(new InsnNode(IRETURN));
 
 				method.instructions = list;
@@ -102,8 +97,8 @@ public class ASMTransformer implements IClassTransformer {
 
 	private byte[] patchMinecraft(byte[] bytes, boolean obf) {
 		ClassNode clazz = Utils.readClass(bytes);
-		final Type fondRenderer = Utils.getObjectType(obf ? "bbu" : "net.minecraft.client.gui.FontRenderer");
-		final String mStartGame = obf ? "ag" : "startGame";
+		final Type fondRenderer = Utils.getObjectType(obf ? "bip" : "net.minecraft.client.gui.FontRenderer");
+		final String mStartGame = obf ? "aq" : "init";
 
 		for (MethodNode method : clazz.methods) {
 			if (method.name.equals(mStartGame) && method.desc.equals(Type.getMethodDescriptor(Type.VOID_TYPE))) {
