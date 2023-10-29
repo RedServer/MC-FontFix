@@ -1,7 +1,6 @@
 package com.gamerforea.fontfix;
 
 import java.util.ListIterator;
-import com.google.common.collect.ImmutableSet;
 import net.minecraft.launchwrapper.IClassTransformer;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
@@ -29,6 +28,12 @@ public class ASMTransformer implements IClassTransformer {
 				return patchMinecraft(bytes, false);
 			case "bib":
 				return patchMinecraft(bytes, true);
+			case "blusunrize.immersiveengineering.client.IEItemFontRender":
+			case "buildcraft.lib.client.render.font.DelegateFontRenderer":
+			case "buildcraft.lib.client.render.font.SpecialColourFontRenderer":
+			case "cofh.core.proxy.ProxyClient":
+			case "cofh.core.util.helpers.RenderHelper":
+				return patchMods(bytes);
 		}
 		return bytes;
 	}
@@ -143,15 +148,13 @@ public class ASMTransformer implements IClassTransformer {
 	 */
 	private byte[] patchMods(byte[] bytes) {
 		ClassNode clazz = Utils.readClass(bytes);
-		ImmutableSet<String> methodNames = ImmutableSet.of("<cinit>", "<init>", "registerRenderInformation");
+		boolean patched = false;
 
 		for (MethodNode method : clazz.methods) {
-			if (methodNames.contains(method.name)) {
-				replaceFontTexture(clazz, method);
-			}
+			patched |= replaceFontTexture(clazz, method);
 		}
 
-		return Utils.writeClass(clazz, 0);
+		return patched ? Utils.writeClass(clazz, 0) : bytes;
 	}
 
 	private static boolean replaceFontTexture(ClassNode clazz, MethodNode method) {
