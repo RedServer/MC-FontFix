@@ -1,2 +1,5 @@
 # Font Fix
-Реализует поддержку «толстых» шрифтов в игре
+
+Реализует поддержку «толстого» шрифта для кириллицы.
+
+[Скачать / Download](https://github.com/RedServer/MC-FontFix/releases)
