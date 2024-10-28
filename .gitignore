@@ -1,11 +1,12 @@
 # Gradle
 /.gradle
 /build
-/minecraft
 
 # IDEA
 /.idea
 /out
+/minecraft
+/run
 
 # OS
 Thumbs.db

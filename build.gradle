@@ -1,18 +1,9 @@
-buildscript {
-	repositories {
-		mavenCentral()
-		maven {
-			name = 'forge'
-			url = getProperty('minecraftforge.repository.url')
-		}
-	}
-	dependencies {
-		classpath 'net.minecraftforge.gradle:ForgeGradle:3.+'
-	}
+plugins {
+	id 'java-library'
+	id 'net.minecraftforge.gradle' version '6.0.+'
+	id 'idea'
+	id 'maven-publish'
 }
-
-apply plugin: 'net.minecraftforge.gradle'
-apply plugin: 'idea'
 
 idea {
 	module {
@@ -21,39 +12,75 @@ idea {
 	}
 }
 
+java {
+	toolchain.languageVersion = JavaLanguageVersion.of(8)
+	sourceCompatibility = targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+legacy {
+	fixClasspath = true
+	extractMappings = true
+	attachMappings = true
+}
+
+repositories {
+	mavenCentral()
+	maven {
+		// Su5ed LegacyDev Fork
+		url = "https://maven.su5ed.dev/releases"
+	}
+}
+
 minecraft {
-	// The mappings can be changed at any time, and must be in the following format.
-	// snapshot_YYYYMMDD   Snapshot are built nightly.
-	// stable_#            Stables are built at the discretion of the MCP team.
-	mappings channel: 'snapshot', version: '20171003-1.12'
-	// makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
+	mappings channel: 'stable', version: '39-1.12'
+	// accessTransformer = file('src/main/resources/META-INF/modid_at.cfg')
 
-	// accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
-
-	// Default run configurations.
-	// These can be tweaked, removed, or duplicated as needed.
 	runs {
-		client {
-			workingDirectory project.file('minecraft')
+		configureEach {
+			workingDirectory file('minecraft')
 
-			// Recommended logging data for a userdev environment
 			property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-
-			// Recommended logging level for the console
 			property 'forge.logging.console.level', 'debug'
+			environment 'MC_VERSION', '1.12.2'
+
+			mods {
+				"${mod_id}" {
+					source sourceSets.main
+				}
+			}
 		}
+
+		client {}
 	}
 }
 
 dependencies {
-	// Specify the version of Minecraft to use, If this is any group other then 'net.minecraft' it is assumed
-	// that the dep is a ForgeGradle 'patcher' dependency. And it's patches will be applied.
-	// The userdev artifact is a special name and will get all sorts of transformations applied to it.
 	minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2860'
-}
 
-// Project settings
-sourceCompatibility = targetCompatibility = JavaVersion.VERSION_1_8
+	constraints {
+		implementation('net.minecraftforge:legacydev:0.3.0.0-legacyExt') {
+			because 'needed to have all ATs work properly'
+		}
+
+		implementation('org.ow2.asm:asm-debug-all:5.2') {
+			because 'newer ASM versions include module info that causes errors in Java 8'
+		}
+	}
+
+	configurations.forEach {
+		// MergeTool pollutes the classpath with conflicting classes
+		it.exclude(group: 'net.minecraftforge', module: 'mergetool')
+
+		// LegacyDev forge dep wants fatjar as the classifier, but 3.0 lacks it
+		it.resolutionStrategy.eachDependency {
+			if (it.requested.module.toString() == "net.minecraftforge:legacydev") {
+				it.artifactSelection {
+					it.selectArtifact(DependencyArtifact.DEFAULT_TYPE, null, null)
+				}
+			}
+		}
+	}
+}
 
 tasks.withType(JavaCompile).configureEach {
 	options.encoding = 'UTF-8'
@@ -66,9 +93,6 @@ jar {
 	}
 }
 
-// This is the preferred method to reobfuscate your jar file
-jar.finalizedBy('reobfJar')
-
 tasks.register('devJar', Jar) {
 	archiveClassifier.set('dev')
 	manifest = jar.manifest
@@ -76,5 +100,5 @@ tasks.register('devJar', Jar) {
 }
 
 artifacts {
-	archives devJar
+	archives tasks.named('devJar')
 }
