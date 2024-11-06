@@ -33,6 +33,7 @@ public class ASMTransformer implements IClassTransformer {
 			case "buildcraft.lib.client.render.font.SpecialColourFontRenderer":
 			case "cofh.core.proxy.ProxyClient":
 			case "cofh.core.util.helpers.RenderHelper":
+			case "slimeknights.tconstruct.common.ClientProxy":
 				return patchMods(bytes);
 		}
 		return bytes;
